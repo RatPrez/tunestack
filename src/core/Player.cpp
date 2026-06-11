@@ -86,6 +86,15 @@ void Player::load(const std::string& filePath)
     startAudio(filePath);
 }
 
+void Player::queue(const std::string& filePath)
+{
+    // drop any forward history beyond current position, then append without playing
+    if (m_historyIndex + 1 < static_cast<int>(m_history.size())) {
+        m_history.erase(m_history.begin() + m_historyIndex + 1, m_history.end());
+    }
+    m_history.push_back(filePath);
+}
+
 void Player::play()
 {
     if (!m_impl->soundLoaded) { return; }
@@ -169,6 +178,12 @@ bool Player::isPlaying() const
     return ma_sound_is_playing(&m_impl->sound);
 }
 
+bool Player::hasNext() const { return m_historyIndex < static_cast<int>(m_history.size()) - 1; }
+bool Player::hasPath(const std::string& filePath) const
+{
+    for (const auto& p : m_history) { if (p == filePath) { return true; } }
+    return false;
+}
 bool Player::isShuffle() const { return m_shuffle; }
 bool Player::isRepeat() const { return m_repeat; }
 bool Player::isMuted() const { return m_muted; }
@@ -192,4 +207,19 @@ std::string Player::getTimeTotal() const
     ma_uint64 length;
     ma_sound_get_length_in_pcm_frames(&m_impl->sound, &length);
     return formatTime(static_cast<float>(length) / static_cast<float>(ma_engine_get_sample_rate(&m_impl->engine)));
+}
+
+float Player::getDuration() const
+{
+    if (!m_impl->soundLoaded) { return 0.0f; }
+    ma_uint64 length;
+    ma_sound_get_length_in_pcm_frames(&m_impl->sound, &length);
+    return static_cast<float>(length) / static_cast<float>(ma_engine_get_sample_rate(&m_impl->engine));
+}
+
+const std::string& Player::getCurrentFilePath() const
+{
+    static const std::string kEmpty;
+    if (m_historyIndex < 0 || m_historyIndex >= static_cast<int>(m_history.size())) { return kEmpty; }
+    return m_history[m_historyIndex];
 }

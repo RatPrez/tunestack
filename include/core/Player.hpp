@@ -13,6 +13,7 @@ public:
     ~Player();
 
     void load(const std::string& filePath);
+    void queue(const std::string& filePath);  // adds to history without playing
     void play();
     void pause();
     void next();
@@ -30,6 +31,8 @@ public:
     void setMuted(bool state);
 
     bool isPlaying() const;
+    bool hasNext() const;
+    bool hasPath(const std::string& filePath) const;
     bool isShuffle() const;
     bool isRepeat() const;
     bool isMuted() const;
@@ -40,6 +43,8 @@ public:
     const std::string& getArtworkBytes() const;
     std::string getTimeElapsed() const;
     std::string getTimeTotal() const;
+    float getDuration() const;
+    const std::string& getCurrentFilePath() const;
 
     static Player* Instance() { return m_instance; }
 
