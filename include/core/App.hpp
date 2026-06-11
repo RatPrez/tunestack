@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/Player.hpp"
+#include "core/MediaManager.hpp"
 #include "core/Settings.hpp"
 
 // panels
@@ -21,6 +22,7 @@ public:
 private:
     Settings m_settings;
     Player m_player;
+    MediaManager m_mediaManager;
 
     TopBar m_topBar;
     BottomBar m_bottomBar;

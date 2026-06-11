@@ -9,6 +9,7 @@ App::App(SDL_Renderer* renderer)
 void App::draw()
 {
     m_player.tick();
+    m_mediaManager.processCompletions();
 
     m_topBar.draw();
     m_bottomBar.draw();
