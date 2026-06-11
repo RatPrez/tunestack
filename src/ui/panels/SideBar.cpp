@@ -1,10 +1,13 @@
 #include "ui/panels/SideBar.hpp"
 
+#include <SDL3/SDL.h>
 #include <imgui.h>
 
 #include "ui/Colors.hpp"
 #include "ui/Flags.hpp"
 #include "ui/Layout.hpp"
+
+#include "core/TextureCache.hpp"
 
 SideBar::SideBar()
 {
@@ -30,14 +33,14 @@ void SideBar::draw()
         )
     );
 
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, Colors::kPanelBg);
-    ImGui::PushStyleColor(ImGuiCol_Border, Colors::kPanelBorder);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, Colors::kTransparent);
+    ImGui::PushStyleColor(ImGuiCol_Border, Colors::kTransparent);
     ImGui::Begin("sb", nullptr, Flags::kStaticDiv);
 
 
-    itemButton(0);
-    itemButton(1);
-    itemButton(2);
+    itemButton(0, "Liked Songs");
+    itemButton(1, "Playlist 1");
+    itemButton(2, "Playlist 2");
 
 
     ImGui::End();
@@ -45,19 +48,30 @@ void SideBar::draw()
 
 }
 
-bool SideBar::itemButton(const int& index)
+bool SideBar::itemButton(const int& index, const std::string& label)
 {
-    const float buttonSize = Layout::kSideBarWidth - (Layout::kBarPadding * 2);
+    const float buttonSize = Layout::kSideBarWidth;
     const ImVec2 windowPos = ImGui::GetWindowPos();
 
-    ImGui::SetCursorPos({
-        Layout::kBarPadding,
-        Layout::kBarPadding + ((buttonSize + Layout::kBarPadding ) * index)
-    });
+    ImGui::SetCursorPos({0, ((buttonSize + Layout::kBarPadding ) * index) });
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+    ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0, 0, 0, 0));
 
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, Colors::kTermainlGreen);
-    ImGui::Button("Test", {buttonSize, buttonSize});
+    auto* artwork = TextureCache::Instance()->get("assets/images/placeholder.jpg");
+    if (artwork) {
+        ImGui::ImageButton(label.c_str(), (ImTextureID)(intptr_t)artwork, {buttonSize, buttonSize});
+    } else {
+        ImGui::Button(label.c_str(), {buttonSize, buttonSize});
+    }
+
+    ImGui::PopStyleVar(2);
     ImGui::PopStyleColor();
+
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("%s", label.c_str());
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+    }
 
     return false;
 }

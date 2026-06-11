@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 class SideBar
 {
 public:
@@ -9,6 +11,6 @@ public:
     void draw();
 
 private:
-    bool itemButton(const int& index);
+    bool itemButton(const int& index, const std::string& label);
 
 };

@@ -14,8 +14,11 @@
 static constexpr int kFpsTarget = 60;
 static constexpr float kFpsMs = 1000.f / kFpsTarget;
 
+Window* Window::m_instance = nullptr;
+
 Window::Window()
 {
+    m_instance = this;
     if (!initSDL() || !initImGui()) {
         m_running = false;
     }
@@ -126,5 +129,7 @@ void Window::loadFonts()
     mergeIcons(20.0f); // merge font awesome icons into default font
 
     Fonts::large = io.Fonts->AddFontFromFileTTF("assets/fonts/VT323-Regular.ttf", 20.f);
+    mergeIcons(24.0f);
+
     Fonts::small = io.Fonts->AddFontFromFileTTF("assets/fonts/VT323-Regular.ttf", 12.f);
 }
