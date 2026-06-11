@@ -3,7 +3,11 @@
 
 App::App(SDL_Renderer* renderer)
 {
+    EventBus::m_instance = &m_eventBus;
 
+    m_eventBus.on("open_settings", [this]() {
+        m_settingsModal.open();
+    });
 }
 
 void App::draw()
@@ -15,4 +19,5 @@ void App::draw()
     m_bottomBar.draw();
     m_sideBar.draw();
     m_mainView.draw();
+    m_settingsModal.draw();
 }

@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <IconsFontAwesome5.h>
 
+#include "core/EventBus.hpp"
 #include "ui/Colors.hpp"
 #include "ui/Flags.hpp"
 #include "ui/Layout.hpp"
@@ -69,7 +70,9 @@ void TopBar::drawRight(const ImVec2& windowPos, const ImVec2& windowSize)
     ImGui::PushStyleColor(ImGuiCol_Border, Colors::kTransparent);
     ImGui::Begin("tbr", nullptr, Flags::kStaticDiv);
 
-    drawButton(0, Anchor::TopRight, ICON_FA_COG, "Settings");
+    if (drawButton(0, Anchor::TopRight, ICON_FA_COG, "Settings")) {
+        EventBus::Instance()->emit("open_settings");
+    }
 
     ImGui::End();
     ImGui::PopStyleColor(2);

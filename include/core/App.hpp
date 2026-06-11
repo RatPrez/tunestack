@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/EventBus.hpp"
 #include "core/Player.hpp"
 #include "core/MediaManager.hpp"
 #include "core/Settings.hpp"
@@ -9,6 +10,7 @@
 #include "ui/panels/BottomBar.hpp"
 #include "ui/panels/SideBar.hpp"
 #include "ui/panels/MainView.hpp"
+#include "ui/panels/SettingsModal.hpp"
 
 // forward declare because, why not?
 class SDL_Renderer;
@@ -20,6 +22,7 @@ public:
     void draw();
 
 private:
+    EventBus m_eventBus;
     Settings m_settings;
     Player m_player;
     MediaManager m_mediaManager;
@@ -28,5 +31,6 @@ private:
     BottomBar m_bottomBar;
     SideBar m_sideBar;
     MainView m_mainView;
+    SettingsModal m_settingsModal;
 
 };
