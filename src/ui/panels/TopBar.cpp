@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <IconsFontAwesome5.h>
 
+#include "core/AppStatus.hpp"
 #include "core/EventBus.hpp"
 #include "ui/Colors.hpp"
 #include "ui/Flags.hpp"
@@ -72,6 +73,23 @@ void TopBar::drawRight(const ImVec2& windowPos, const ImVec2& windowSize)
 
     if (drawButton(0, Anchor::TopRight, ICON_FA_COG, "Settings")) {
         EventBus::Instance()->emit("open_settings");
+    }
+
+    auto* status = AppStatus::Instance();
+    if (status && status->isActive()) {
+        static constexpr const char* kSpinner[] = { "|", "/", "-", "\\" };
+        const int frame = static_cast<int>(ImGui::GetTime() * 8.0) % 4;
+
+        const std::string msg = std::string(kSpinner[frame]) + "  " + status->get();
+        const ImVec2 textSize = ImGui::CalcTextSize(msg.c_str());
+        const float cogW = Layout::kTopBarHeight;
+        const float x = ImGui::GetWindowWidth() - cogW - textSize.x - Layout::kBarPadding * 2;
+        const float y = (Layout::kTopBarHeight - textSize.y) / 2.0f;
+
+        ImGui::SetCursorPos({ x, y });
+        ImGui::PushStyleColor(ImGuiCol_Text, Colors::kWhiteHalf);
+        ImGui::TextUnformatted(msg.c_str());
+        ImGui::PopStyleColor();
     }
 
     ImGui::End();

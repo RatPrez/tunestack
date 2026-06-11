@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 
+#include "core/AppStatus.hpp"
 #include "core/MediaManager.hpp"
 #include "core/Player.hpp"
 #include "core/Track.hpp"
@@ -27,7 +28,9 @@ void Radio::tick()
     m_sourceTrack = currentTrack;
 
     std::thread([this, artist = currentArtist, track = currentTrack]() {
+        AppStatus::Instance()->set("Finding similar tracks...");
         auto similar = m_lastfm.trackSimilar(artist, track, 15);
+        AppStatus::Instance()->clear();
 
         // build candidates — filter out anything already in history
         std::vector<LastFMTrack> candidates;

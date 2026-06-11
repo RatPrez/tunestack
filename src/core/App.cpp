@@ -40,7 +40,9 @@ App::~App()
 
 void App::search(const std::string& query)
 {
+    m_appStatus.set("Searching...");
     auto lfmTracks = m_lastfm.trackSearch(query, 25);
+    m_appStatus.clear();
 
     std::vector<TrackResult> results;
     results.reserve(lfmTracks.size());

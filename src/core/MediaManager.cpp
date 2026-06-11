@@ -1,4 +1,5 @@
 #include "core/MediaManager.hpp"
+#include "core/AppStatus.hpp"
 
 MediaManager* MediaManager::m_instance = nullptr;
 
@@ -92,6 +93,10 @@ std::string MediaManager::trackPath(const std::string& id) const
 
 void MediaManager::fetchAndDownload(const TrackResult& track)
 {
+    if (AppStatus::Instance()) {
+        AppStatus::Instance()->set("Caching Song");
+    }
+
     auto ytResult = m_youtube.search(std::format("{} - {} (Audio)", track.track, track.artist));
     if (!ytResult) {
         pushCompletions(track.id, TrackStatus::NotFound, "");
@@ -123,6 +128,7 @@ void MediaManager::fetchAndDownload(const TrackResult& track)
     }
 
     writeMetadata(path, track, artworkBytes);
+    if (AppStatus::Instance()) { AppStatus::Instance()->clear(); }
     pushCompletions(track.id, TrackStatus::Ready, path);
 }
 

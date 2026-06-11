@@ -5,6 +5,7 @@
 #include <thread>
 #include <vector>
 
+#include "core/AppStatus.hpp"
 #include "core/EventBus.hpp"
 #include "core/Player.hpp"
 #include "core/MediaManager.hpp"
@@ -31,6 +32,7 @@ public:
     void draw();
 
 private:
+    AppStatus    m_appStatus;
     EventBus     m_eventBus;
     Settings     m_settings;
     Player       m_player;
