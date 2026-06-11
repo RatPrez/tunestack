@@ -83,6 +83,7 @@ bool Window::initSDL()
             SDL_Log( "SDL could not initialize! SDL error: %s\n", SDL_GetError() );
             return false;
         }
+        SDL_SetWindowMinimumSize(m_window, 800, 500);
     } catch (std::exception e) {
 
         return false;
