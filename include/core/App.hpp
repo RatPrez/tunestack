@@ -1,6 +1,8 @@
 #pragma once
 
 #include "core/Player.hpp"
+#include "core/Settings.hpp"
+
 // panels
 #include "ui/panels/TopBar.hpp"
 #include "ui/panels/BottomBar.hpp"
@@ -17,6 +19,7 @@ public:
     void draw();
 
 private:
+    Settings m_settings;
     Player m_player;
 
     TopBar m_topBar;
