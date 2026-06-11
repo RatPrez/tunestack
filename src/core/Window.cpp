@@ -6,8 +6,10 @@
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
+#include <IconsFontAwesome5.h>
 
 #include "core/App.hpp"
+#include "ui/Fonts.hpp"
 
 static constexpr int kFpsTarget = 60;
 static constexpr float kFpsMs = 1000.f / kFpsTarget;
@@ -94,6 +96,8 @@ bool Window::initImGui()
         ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         ImGui::StyleColorsDark();
 
+        loadFonts();
+
         ImGui_ImplSDL3_InitForSDLRenderer(m_window, m_renderer);
         ImGui_ImplSDLRenderer3_Init(m_renderer);
     } catch (std::exception e) {
@@ -102,4 +106,25 @@ bool Window::initImGui()
     }
 
     return true;
+}
+
+void Window::loadFonts()
+{
+    const auto& io = ImGui::GetIO();
+
+    static const ImWchar k_iconRanges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+    auto mergeIcons = [&](float size) {
+        ImFontConfig cfg;
+        cfg.MergeMode = true;
+        cfg.PixelSnapH = true;
+        cfg.GlyphMinAdvanceX = size * 2.0f / 3.0f;
+        io.Fonts->AddFontFromFileTTF("assets/fonts/" FONT_ICON_FILE_NAME_FAS, size * 2.0f / 3.0f, &cfg, k_iconRanges);
+    };
+
+    // first font becomes default, so we load regular first.
+    Fonts::regular = io.Fonts->AddFontFromFileTTF("assets/fonts/VT323-Regular.ttf", 16.f);
+    mergeIcons(20.0f); // merge font awesome icons into default font
+
+    Fonts::large = io.Fonts->AddFontFromFileTTF("assets/fonts/VT323-Regular.ttf", 20.f);
+    Fonts::small = io.Fonts->AddFontFromFileTTF("assets/fonts/VT323-Regular.ttf", 12.f);
 }

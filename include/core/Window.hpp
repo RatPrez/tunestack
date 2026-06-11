@@ -19,4 +19,6 @@ private:
     bool initSDL();
     bool initImGui();
 
+    void loadFonts();
+
 };

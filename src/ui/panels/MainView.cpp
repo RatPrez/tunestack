@@ -2,9 +2,9 @@
 
 #include <imgui.h>
 
-#include "Colors.hpp"
-#include "Flags.hpp"
-#include "Layout.hpp"
+#include "ui/Colors.hpp"
+#include "ui/Flags.hpp"
+#include "ui/Layout.hpp"
 
 MainView::MainView()
 {
