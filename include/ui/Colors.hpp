@@ -12,7 +12,7 @@ namespace Colors
 
     inline constexpr ImVec4 kWhite { 1.f, 1.f, 1.f, 1.f };
     inline constexpr ImVec4 kWhiteHalf { 1.f, 1.f, 1.f, .5f };
-
+    inline constexpr ImVec4 kWhiteDead { 1.f, 1.f, 1.f, .2f };
 
     inline constexpr ImVec4 kAccent     { 0.35f, 0.65f, 1.0f, 1.0f };
     inline constexpr ImVec4 kAccentDim  { 0.35f, 0.65f, 1.0f, 0.5f };

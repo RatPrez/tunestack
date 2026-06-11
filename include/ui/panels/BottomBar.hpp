@@ -14,6 +14,6 @@ private:
     void drawControls();
     void drawVolume();
 
-    bool drawButton(const char* id, const char* icon, const char* hint);
+    bool drawButton(const char* id, const char* icon, const char* hint, const bool& active = true);
 
 };

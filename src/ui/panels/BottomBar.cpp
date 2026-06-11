@@ -163,9 +163,12 @@ void BottomBar::drawControls()
     if (drawButton("play", player->isPlaying() ? ICON_FA_PAUSE : ICON_FA_PLAY, player->isPlaying() ? "Pause" : "Play")) {
         if (player->isPlaying()) player->pause(); else player->play();
     }
+
+    bool hasNext = player->hasNext();
     ImGui::SameLine();
-    if (drawButton("next", ICON_FA_STEP_FORWARD, "Next"))
+    if (drawButton("next", ICON_FA_STEP_FORWARD, "Next", hasNext) && hasNext)
         player->next();
+
     ImGui::SameLine();
     if (drawButton("loop", ICON_FA_REDO, player->isRepeat() ? "Repeat: On" : "Repeat: Off"))
         player->toggleRepeat();
@@ -228,7 +231,7 @@ void BottomBar::drawVolume()
     dl->AddRectFilled(screenPos, { fillX, screenPos.y + kVolumeSliderH }, fillColor);
 }
 
-bool BottomBar::drawButton(const char* id, const char* icon, const char* hint)
+bool BottomBar::drawButton(const char* id, const char* icon, const char* hint, const bool& active)
 {
     ImGui::PushID(id);
 
@@ -245,7 +248,7 @@ bool BottomBar::drawButton(const char* id, const char* icon, const char* hint)
     ImGui::PushStyleColor(ImGuiCol_Button, Colors::kTransparent);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Colors::kTransparent);
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, Colors::kTransparent);
-    ImGui::PushStyleColor(ImGuiCol_Text, hovered ? Colors::kWhite : Colors::kWhiteHalf);
+    ImGui::PushStyleColor(ImGuiCol_Text, active ? (hovered ? Colors::kWhite : Colors::kWhiteHalf) : Colors::kWhiteDead);
     ImGui::PushFont(Fonts::large);
 
     const bool clicked = ImGui::Button(icon, { kButtonSize, kButtonSize });
