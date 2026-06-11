@@ -1,5 +1,7 @@
 #include "core/MediaManager.hpp"
 
+MediaManager* MediaManager::m_instance = nullptr;
+
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include <httplib.h>
 
@@ -17,6 +19,7 @@ namespace fs = std::filesystem;
 MediaManager::MediaManager(const std::string& libraryPath)
     : m_libraryPath(libraryPath)
 {
+    m_instance = this;
     fs::create_directories(libraryPath);
 }
 
@@ -57,6 +60,11 @@ void MediaManager::processCompletions()
 bool MediaManager::trackExists(const int trackId) const
 {
     return fs::exists(trackPath(trackId));
+}
+
+bool MediaManager::isDownloaded(int trackId) const
+{
+    return trackExists(trackId);
 }
 
 std::string MediaManager::trackPath(const int trackId) const

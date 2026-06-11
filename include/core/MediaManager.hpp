@@ -21,6 +21,14 @@ public:
 
     void requestTrack(const ITunesResult& track, TrackCallback onComplete);
     void processCompletions();
+    bool isDownloaded(int trackId) const;
+
+    static MediaManager* Instance() { return m_instance; }
+
+private:
+    static MediaManager* m_instance;
+
+public:
 
 private:
     struct CompletionEvent
