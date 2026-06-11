@@ -12,9 +12,22 @@ MediaManager* MediaManager::m_instance = nullptr;
 
 #include <filesystem>
 #include <format>
+#include <functional>
 #include <thread>
 
 namespace fs = std::filesystem;
+
+// stable filename from a LastFM id (mbid or artist+track hash)
+static std::string safeId(const std::string& id)
+{
+    // mbids are already filename-safe (hex + hyphens); others get hashed
+    bool safe = true;
+    for (char c : id) {
+        if (!std::isalnum((unsigned char)c) && c != '-' && c != '_') { safe = false; break; }
+    }
+    if (safe && !id.empty()) { return id; }
+    return std::to_string(std::hash<std::string>{}(id));
+}
 
 MediaManager::MediaManager(const std::string& libraryPath)
     : m_libraryPath(libraryPath)
@@ -23,21 +36,21 @@ MediaManager::MediaManager(const std::string& libraryPath)
     fs::create_directories(libraryPath);
 }
 
-void MediaManager::requestTrack(const ITunesResult& track, TrackCallback onComplete)
+void MediaManager::requestTrack(const TrackResult& track, TrackCallback onComplete)
 {
-    if (trackExists(track.trackId)) {
+    if (trackExists(track.id)) {
         std::lock_guard lock(m_queueMutex);
-        m_completionQueue.push({ std::move(onComplete), TrackStatus::Ready, trackPath(track.trackId) });
+        m_completionQueue.push({ std::move(onComplete), TrackStatus::Ready, trackPath(track.id) });
         return;
     }
 
     {
         std::lock_guard lock(m_downloadMutex);
-        if (m_pendingCallbacks.count(track.trackId)) {
-            m_pendingCallbacks[track.trackId].push_back(std::move(onComplete));
+        if (m_pendingCallbacks.count(track.id)) {
+            m_pendingCallbacks[track.id].push_back(std::move(onComplete));
             return;
         }
-        m_pendingCallbacks[track.trackId].push_back(std::move(onComplete));
+        m_pendingCallbacks[track.id].push_back(std::move(onComplete));
     }
 
     std::thread([this, track]() { fetchAndDownload(track); }).detach();
@@ -57,76 +70,75 @@ void MediaManager::processCompletions()
     }
 }
 
-bool MediaManager::trackExists(const int trackId) const
+bool MediaManager::trackExists(const std::string& id) const
 {
-    return fs::exists(trackPath(trackId));
+    return fs::exists(trackPath(id));
 }
 
-bool MediaManager::isDownloaded(int trackId) const
+bool MediaManager::isDownloaded(const std::string& id) const
 {
-    return trackExists(trackId);
+    return trackExists(id);
 }
 
-std::string MediaManager::trackPath(const int trackId) const
+std::string MediaManager::getPath(const std::string& id) const
 {
-    return std::format("{}{}.mp3", m_libraryPath, trackId);
+    return trackPath(id);
 }
 
-std::string MediaManager::highResArtworkUrl(const std::string& url) const
+std::string MediaManager::trackPath(const std::string& id) const
 {
-    std::string result = url;
-    if (auto pos = result.find("100x100bb"); pos != std::string::npos) {
-        result.replace(pos, 9, "600x600bb");
-    }
-    return result;
+    return m_libraryPath + safeId(id) + ".mp3";
 }
 
-void MediaManager::fetchAndDownload(const ITunesResult& track)
+void MediaManager::fetchAndDownload(const TrackResult& track)
 {
     auto ytResult = m_youtube.search(std::format("{} - {} (Audio)", track.track, track.artist));
     if (!ytResult) {
-        pushCompletions(track.trackId, TrackStatus::NotFound, "");
+        pushCompletions(track.id, TrackStatus::NotFound, "");
         return;
     }
 
-    const std::string path = trackPath(track.trackId);
+    const std::string path = trackPath(track.id);
     if (!m_youtube.download(*ytResult, path)) {
-        pushCompletions(track.trackId, TrackStatus::Error, "");
+        pushCompletions(track.id, TrackStatus::Error, "");
         return;
     }
 
+    // fetch artwork via iTunes
     std::string artworkBytes;
-    const std::string artUrl = highResArtworkUrl(track.artworkUrl);
-    const size_t schemeEnd = artUrl.find("://");
-    if (schemeEnd != std::string::npos) {
-        const std::string hostAndPath = artUrl.substr(schemeEnd + 3);
-        const size_t pathStart = hostAndPath.find('/');
-        if (pathStart != std::string::npos) {
-            httplib::Client client("https://" + hostAndPath.substr(0, pathStart));
-            client.set_follow_location(true);
-            if (auto res = client.Get(hostAndPath.substr(pathStart)); res && res->status == 200) {
-                artworkBytes = std::move(res->body);
+    const std::string artUrl = m_itunes.fetchArtwork(track.artist, track.track);
+    if (!artUrl.empty()) {
+        const size_t schemeEnd = artUrl.find("://");
+        if (schemeEnd != std::string::npos) {
+            const std::string hostAndPath = artUrl.substr(schemeEnd + 3);
+            const size_t pathStart = hostAndPath.find('/');
+            if (pathStart != std::string::npos) {
+                httplib::Client client("https://" + hostAndPath.substr(0, pathStart));
+                client.set_follow_location(true);
+                if (auto res = client.Get(hostAndPath.substr(pathStart)); res && res->status == 200) {
+                    artworkBytes = std::move(res->body);
+                }
             }
         }
     }
 
     writeMetadata(path, track, artworkBytes);
-    pushCompletions(track.trackId, TrackStatus::Ready, path);
+    pushCompletions(track.id, TrackStatus::Ready, path);
 }
 
 void MediaManager::writeMetadata(
-    const std::string& filePath, const ITunesResult& track, const std::string& artworkBytes) const
+    const std::string& filePath, const TrackResult& track, const std::string& artworkBytes) const
 {
     TagLib::MPEG::File file(filePath.c_str());
     TagLib::ID3v2::Tag* tag = file.ID3v2Tag(true);
 
     tag->setTitle(TagLib::String(track.track, TagLib::String::UTF8));
     tag->setArtist(TagLib::String(track.artist, TagLib::String::UTF8));
-    tag->setAlbum(TagLib::String(track.collection, TagLib::String::UTF8));
+    tag->setAlbum(TagLib::String(track.album, TagLib::String::UTF8));
 
     auto* txxx = new TagLib::ID3v2::UserTextIdentificationFrame(TagLib::String::UTF8);
-    txxx->setDescription("TUNESTASH_TRACK_ID");
-    txxx->setText(TagLib::String(std::to_string(track.trackId), TagLib::String::UTF8));
+    txxx->setDescription("TUNESTACK_TRACK_ID");
+    txxx->setText(TagLib::String(track.id, TagLib::String::UTF8));
     tag->addFrame(txxx);
 
     if (!artworkBytes.empty()) {
@@ -140,12 +152,12 @@ void MediaManager::writeMetadata(
     file.save();
 }
 
-void MediaManager::pushCompletions(const int trackId, const TrackStatus status, const std::string& filePath)
+void MediaManager::pushCompletions(const std::string& id, const TrackStatus status, const std::string& filePath)
 {
     std::vector<TrackCallback> callbacks;
     {
         std::lock_guard lock(m_downloadMutex);
-        auto it = m_pendingCallbacks.find(trackId);
+        auto it = m_pendingCallbacks.find(id);
         if (it != m_pendingCallbacks.end()) {
             callbacks = std::move(it->second);
             m_pendingCallbacks.erase(it);

@@ -31,10 +31,11 @@ class ITunes
 {
 public:
     ITunes();
-    std::vector<ITunesResult> search(const std::string& query);
+
+    // fetch artwork URL for a given artist+track (used internally by MediaManager)
+    std::string fetchArtwork(const std::string& artist, const std::string& track);
 
     ITunesAlbum getAlbum(int64_t albumId);
-
     std::vector<ITunesResult> getTop25Songs(const std::string& region = "us");
 
 private:

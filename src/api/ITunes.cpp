@@ -12,39 +12,17 @@ ITunes::ITunes()
     m_httpClient2.set_follow_location(true);
 }
 
-std::vector<ITunesResult> ITunes::search(const std::string& query)
+std::string ITunes::fetchArtwork(const std::string& artist, const std::string& track)
 {
-    std::vector<ITunesResult> results;
     try {
-        auto res = m_httpClient.Get("/search?term=" + formatTerm(query) + "&media=music&limit=10");
-        if (!res || res->status != 200) {
-            std::cout << "ITunes: HTTP " << (res ? res->status : -1) << "\n";
-            return results;
-        }
-
+        const std::string term = formatTerm(artist + " " + track);
+        auto res = m_httpClient.Get("/search?term=" + term + "&media=music&limit=1");
+        if (!res || res->status != 200) { return {}; }
         auto body = json::parse(res->body, nullptr, false);
-        if (body.is_discarded()) {
-            std::cout << "ITunes: failed to parse response\n";
-            return results;
-        }
-
-        const int count = body["resultCount"].get<int>();
-        results.reserve(count);
-        for (int i = 0; i < count; ++i) {
-            auto& song = body["results"][i];
-            results.push_back({
-                .trackId    = song["trackId"].get<int64_t>(),
-                .artistId   = song["artistId"].get<int64_t>(),
-                .artist     = song["artistName"].get<std::string>(),
-                .collection = song["collectionName"].get<std::string>(),
-                .track      = song["trackName"].get<std::string>(),
-                .artworkUrl = song["artworkUrl100"].get<std::string>(),
-            });
-        }
-    } catch (const std::exception& e) {
-        std::cout << "ITunes: " << e.what() << "\n";
-    }
-    return results;
+        if (body.is_discarded() || body["resultCount"].get<int>() == 0) { return {}; }
+        return body["results"][0].value("artworkUrl100", std::string{});
+    } catch (...) {}
+    return {};
 }
 
 ITunesAlbum ITunes::getAlbum(int64_t albumId)

@@ -2,18 +2,23 @@
 
 #include <imgui.h>
 
+#include "core/Track.hpp"
 #include "ui/Colors.hpp"
 #include "ui/Flags.hpp"
 #include "ui/Layout.hpp"
 
 MainView::MainView()
 {
-
 }
 
 MainView::~MainView()
 {
+}
 
+void MainView::showSearch(const std::vector<TrackResult>& results)
+{
+    m_searchResults.setResults(results);
+    m_state = MainViewState::Search;
 }
 
 void MainView::draw()
@@ -37,7 +42,21 @@ void MainView::draw()
     ImGui::PushStyleColor(ImGuiCol_Border, Colors::kPanelBorder);
     ImGui::Begin("mv", nullptr, Flags::kStaticDiv);
 
+    switch (m_state)
+    {
+    case MainViewState::Home:   drawHome();   break;
+    case MainViewState::Search: drawSearch(); break;
+    }
+
     ImGui::End();
     ImGui::PopStyleColor(2);
+}
 
+void MainView::drawHome()
+{
+}
+
+void MainView::drawSearch()
+{
+    m_searchResults.draw();
 }
