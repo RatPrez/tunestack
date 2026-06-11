@@ -1,4 +1,4 @@
-#include "core/Window.h"
+#include "core/Window.hpp"
 
 #include <exception>
 
@@ -7,10 +7,10 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_sdlrenderer3.h>
 
-#include "core/App.h"
+#include "core/App.hpp"
 
-static constexpr int k_fpsTarget = 60;
-static constexpr float k_fpsMs = 1000.f / k_fpsTarget;
+static constexpr int kFpsTarget = 60;
+static constexpr float kFpsMs = 1000.f / kFpsTarget;
 
 Window::Window()
 {
@@ -64,8 +64,8 @@ void Window::run()
         SDL_RenderPresent(m_renderer);
 
         const uint64_t frameTime = SDL_GetTicks() - frameStart;
-        if (frameTime < static_cast<uint32_t>(k_fpsMs)) {
-            SDL_Delay(static_cast<uint32_t>(k_fpsMs) - static_cast<uint32_t>(frameTime));
+        if (frameTime < static_cast<uint32_t>(kFpsMs)) {
+            SDL_Delay(static_cast<uint32_t>(kFpsMs) - static_cast<uint32_t>(frameTime));
         }
     }
 }
