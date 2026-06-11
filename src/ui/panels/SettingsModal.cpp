@@ -13,6 +13,10 @@ void SettingsModal::open()
     const std::string existing = Settings::Instance()->get<std::string>("youtube_api_key");
     std::strncpy(m_apiKeyBuf, existing.c_str(), sizeof(m_apiKeyBuf) - 1);
     m_apiKeyBuf[sizeof(m_apiKeyBuf) - 1] = '\0';
+
+    const std::string existingLfm = Settings::Instance()->get<std::string>("lastfm_api_key");
+    std::strncpy(m_lastfmKeyBuf, existingLfm.c_str(), sizeof(m_lastfmKeyBuf) - 1);
+    m_lastfmKeyBuf[sizeof(m_lastfmKeyBuf) - 1] = '\0';
 }
 
 void SettingsModal::draw()
@@ -22,7 +26,7 @@ void SettingsModal::draw()
         m_open = false;
     }
 
-    ImGui::SetNextWindowSize(ImVec2(420, 160), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(420, 230), ImGuiCond_Always);
     ImGui::SetNextWindowPos(
         ImGui::GetMainViewport()->GetCenter(),
         ImGuiCond_Always,
@@ -42,6 +46,13 @@ void SettingsModal::draw()
     ImGui::InputText("##yt_api_key", m_apiKeyBuf, sizeof(m_apiKeyBuf));
 
     ImGui::Spacing();
+
+    ImGui::Text("Last.fm API Key");
+    ImGui::Spacing();
+    ImGui::SetNextItemWidth(-1);
+    ImGui::InputText("##lfm_api_key", m_lastfmKeyBuf, sizeof(m_lastfmKeyBuf));
+
+    ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
 
@@ -51,6 +62,7 @@ void SettingsModal::draw()
 
     if (save) {
         Settings::Instance()->set("youtube_api_key", std::string(m_apiKeyBuf));
+        Settings::Instance()->set("lastfm_api_key",  std::string(m_lastfmKeyBuf));
         ImGui::CloseCurrentPopup();
     }
 

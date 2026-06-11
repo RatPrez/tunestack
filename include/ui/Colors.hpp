@@ -14,7 +14,10 @@ namespace Colors
     inline constexpr ImVec4 kWhiteHalf { 1.f, 1.f, 1.f, .5f };
 
 
-    inline constexpr ImVec4 kTrackIdle { 1.f, 1.f, 1.f, 0.1f };
-    inline constexpr ImVec4 kTrackProgress { 0.f, 0.2f, 0.8f, 0.3f };
-    inline constexpr ImVec4 kTrackProgressHover { 0.f, 0.2f, 0.8f, 0.6f };
+    inline constexpr ImVec4 kAccent     { 0.35f, 0.65f, 1.0f, 1.0f };
+    inline constexpr ImVec4 kAccentDim  { 0.35f, 0.65f, 1.0f, 0.5f };
+
+    inline constexpr ImVec4 kTrackIdle         { 1.f, 1.f, 1.f, 0.1f };
+    inline constexpr ImVec4 kTrackProgress     { 0.35f, 0.65f, 1.0f, 0.5f };
+    inline constexpr ImVec4 kTrackProgressHover{ 0.35f, 0.65f, 1.0f, 0.85f };
 }

@@ -1,5 +1,7 @@
 #include "ui/panels/BottomBar.hpp"
 
+#include <algorithm>
+
 #include <imgui.h>
 #include <IconsFontAwesome5.h>
 
@@ -59,11 +61,11 @@ void BottomBar::drawTrackInfo()
     SDL_Texture* artwork = nullptr;
     if (!artworkKey.empty()) {
         auto* cache = TextureCache::Instance();
-        artwork = cache->get(artworkKey);
-        if (!artwork) {
-            const std::string& bytes = player->getArtworkBytes();
+        const std::string& bytes = player->getArtworkBytes();
+        if (!bytes.empty()) {
             cache->addImageBytes(artworkKey, bytes.data(), (int)bytes.size());
         }
+        artwork = cache->get(artworkKey);
     }
 
     if (artwork) {
@@ -117,7 +119,18 @@ void BottomBar::drawTrackProgress()
     const bool hovered = ImGui::IsMouseHoveringRect({ windowPos.x, sliderY }, { windowPos.x + windowWidth, sliderY + kSliderH });
     const bool active = ImGui::IsItemActive();
 
-    if (hovered || active) { ImGui::SetMouseCursor(ImGuiMouseCursor_Hand); }
+    if (hovered || active) {
+        ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+
+        const float duration = player->getDuration();
+        if (hovered && duration > 0.0f)
+        {
+            const float hoverPos = (ImGui::GetMousePos().x - windowPos.x) / windowWidth;
+            const float hoverSeconds = std::clamp(hoverPos, 0.0f, 1.0f) * duration;
+            const int total = static_cast<int>(hoverSeconds);
+            ImGui::SetTooltip("%02d:%02d", total / 60, total % 60);
+        }
+    }
 
     const ImU32 trackColor = ImGui::ColorConvertFloat4ToU32(Colors::kTrackIdle);
     const ImU32 trackColorProg = ImGui::ColorConvertFloat4ToU32((hovered || active) ? Colors::kTrackProgressHover : Colors::kTrackProgress);

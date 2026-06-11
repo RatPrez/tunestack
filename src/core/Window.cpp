@@ -56,6 +56,8 @@ void Window::run()
             }
         }
 
+        app.tick();
+
         ImGui_ImplSDLRenderer3_NewFrame();
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();

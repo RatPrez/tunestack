@@ -107,8 +107,10 @@ void TopBar::drawSearch(const ImVec2& windowPos, const ImVec2& windowSize)
 
     // icon
     const bool clicked = drawButton(0, Anchor::TopRight, ICON_FA_SEARCH, "Search");
-    if (clicked) {
-        submitted = true;
+    if (clicked) { submitted = true; }
+
+    if (submitted && m_searchBuf[0] != '\0') {
+        EventBus::Instance()->emit<std::string>("search", std::string(m_searchBuf));
     }
 
     ImGui::End();
