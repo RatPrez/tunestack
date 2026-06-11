@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/Player.hpp"
 // panels
 #include "ui/panels/TopBar.hpp"
 #include "ui/panels/BottomBar.hpp"
@@ -16,6 +17,8 @@ public:
     void draw();
 
 private:
+    Player m_player;
+
     TopBar m_topBar;
     BottomBar m_bottomBar;
     SideBar m_sideBar;

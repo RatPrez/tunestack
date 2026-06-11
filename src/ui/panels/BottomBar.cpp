@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <IconsFontAwesome5.h>
 
+#include "core/Player.hpp"
 #include "core/TextureCache.hpp"
 
 #include "ui/Colors.hpp"
@@ -51,9 +52,20 @@ void BottomBar::draw()
 
 void BottomBar::drawTrackInfo()
 {
+    auto* player = Player::Instance();
     ImGui::SetCursorPos({ 0, 0 });
 
-    SDL_Texture* artwork = TextureCache::Instance()->get("assets/images/placeholder.jpg");
+    const std::string& artworkKey = player->getArtworkKey();
+    SDL_Texture* artwork = nullptr;
+    if (!artworkKey.empty()) {
+        auto* cache = TextureCache::Instance();
+        artwork = cache->get(artworkKey);
+        if (!artwork) {
+            const std::string& bytes = player->getArtworkBytes();
+            cache->addImageBytes(artworkKey, bytes.data(), (int)bytes.size());
+        }
+    }
+
     if (artwork) {
         ImGui::Image((ImTextureID)(intptr_t)artwork, ImVec2(Layout::kSideBarWidth, Layout::kSideBarWidth));
     } else {
@@ -64,10 +76,12 @@ void BottomBar::drawTrackInfo()
     ImGui::SetCursorPosY((Layout::kSideBarWidth - ImGui::GetTextLineHeightWithSpacing() * 2.f) * .5f);
     ImGui::BeginGroup();
 
-    ImGui::Text("Track Name");
+    const std::string& track = player->getTrack();
+    ImGui::Text("%s", track.empty() ? "No Track" : track.c_str());
 
     ImGui::PushStyleColor(ImGuiCol_Text, Colors::kWhiteHalf);
-    ImGui::Text("Artist Name");
+    const std::string& artist = player->getArtist();
+    ImGui::Text("%s", artist.empty() ? "" : artist.c_str());
     ImGui::PopStyleColor();
 
     ImGui::EndGroup();
@@ -83,6 +97,9 @@ void BottomBar::drawTrackProgress()
 
     constexpr float kSliderH = 16.0f;
 
+    auto* player = Player::Instance();
+    float progress = player->getPosition();
+
     // invisible slider first so we can query active state before drawing
     ImGui::SetCursorPos({ 0, (float)Layout::kBottomBarHeight - trackHeight / 2.0f - kSliderH / 2.0f });
     ImGui::PushStyleColor(ImGuiCol_FrameBg,          ImVec4(0, 0, 0, 0));
@@ -91,7 +108,9 @@ void BottomBar::drawTrackProgress()
     ImGui::PushStyleColor(ImGuiCol_SliderGrab,       ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0, 0, 0, 0));
     ImGui::SetNextItemWidth(windowWidth);
-    ImGui::SliderFloat("##progress", &m_progress, 0.0f, 1.0f, "");
+    if (ImGui::SliderFloat("##progress", &progress, 0.0f, 1.0f, "")) {
+        player->setPosition(progress);
+    }
     ImGui::PopStyleColor(5);
 
     const float sliderY = y + (trackHeight - kSliderH) / 2.0f;
@@ -103,7 +122,7 @@ void BottomBar::drawTrackProgress()
     const ImU32 trackColor = ImGui::ColorConvertFloat4ToU32(Colors::kTrackIdle);
     const ImU32 trackColorProg = ImGui::ColorConvertFloat4ToU32((hovered || active) ? Colors::kTrackProgressHover : Colors::kTrackProgress);
 
-    float fillX = windowPos.x + (windowWidth * m_progress);
+    float fillX = windowPos.x + (windowWidth * progress);
 
     auto* dl = ImGui::GetWindowDrawList();
     dl->AddRectFilled({ windowPos.x, y }, { windowPos.x + windowWidth, y + trackHeight }, trackColor);
@@ -119,16 +138,24 @@ void BottomBar::drawControls()
         ((float)Layout::kSideBarWidth - kButtonSize) / 4.0f
     ));
 
+    auto* player = Player::Instance();
+
     // shuffle, back, play, forward, loop
-    drawButton("shuffle", ICON_FA_RANDOM, "Shuffle");
+    if (drawButton("shuffle", ICON_FA_RANDOM, player->isShuffle() ? "Shuffle: On" : "Shuffle: Off"))
+        player->toggleShuffle();
     ImGui::SameLine();
-    drawButton("prev", ICON_FA_STEP_BACKWARD, "Previous");
+    if (drawButton("prev", ICON_FA_STEP_BACKWARD, "Previous"))
+        player->prev();
     ImGui::SameLine();
-    drawButton("play", ICON_FA_PLAY, "Play/Pause");
+    if (drawButton("play", player->isPlaying() ? ICON_FA_PAUSE : ICON_FA_PLAY, player->isPlaying() ? "Pause" : "Play")) {
+        if (player->isPlaying()) player->pause(); else player->play();
+    }
     ImGui::SameLine();
-    drawButton("next", ICON_FA_STEP_FORWARD, "Next");
+    if (drawButton("next", ICON_FA_STEP_FORWARD, "Next"))
+        player->next();
     ImGui::SameLine();
-    drawButton("loop", ICON_FA_REDO, "Loop");
+    if (drawButton("loop", ICON_FA_REDO, player->isRepeat() ? "Repeat: On" : "Repeat: Off"))
+        player->toggleRepeat();
 }
 
 void BottomBar::drawVolume()
@@ -141,21 +168,21 @@ void BottomBar::drawVolume()
     const float sliderX = startX + kButtonSize;
     const float sliderY = centerY + (kButtonSize - kVolumeSliderH) / 2.0f;
 
+    auto* player = Player::Instance();
+
     // icon — toggles mute on click
-    const bool effectivelyMuted = m_muted || m_volume == 0.0f;
+    const bool muted = player->isMuted();
+    const float volume = player->getVolume();
+    const bool effectivelyMuted = muted || volume == 0.0f;
     const char* volumeIcon = effectivelyMuted ? ICON_FA_VOLUME_MUTE : ICON_FA_VOLUME_UP;
     const char* volumeHint = effectivelyMuted ? "Unmute" : "Mute";
     ImGui::SetCursorPos({ startX, centerY });
     if (drawButton("volume", volumeIcon, volumeHint)) {
-        if (m_muted) {
-            m_muted = false;
-        } else {
-            m_muted = true;
-            if (m_volume == 0.0f) { m_volume = 0.75f; }
-        }
+        player->setMuted(!muted);
     }
 
     // invisible slider first so we can query active state before drawing
+    float sliderVolume = volume;
     ImGui::SetCursorPos({ sliderX, sliderY });
     ImGui::PushStyleColor(ImGuiCol_FrameBg,          ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_FrameBgHovered,   ImVec4(0, 0, 0, 0));
@@ -163,7 +190,9 @@ void BottomBar::drawVolume()
     ImGui::PushStyleColor(ImGuiCol_SliderGrab,       ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, ImVec4(0, 0, 0, 0));
     ImGui::SetNextItemWidth(kVolumeSliderW);
-    ImGui::SliderFloat("##volume", &m_volume, 0.0f, 1.0f, "");
+    if (ImGui::SliderFloat("##volume", &sliderVolume, 0.0f, 1.0f, "")) {
+        player->setVolume(sliderVolume);
+    }
     ImGui::PopStyleColor(5);
 
     const bool active = ImGui::IsItemActive();
@@ -174,12 +203,12 @@ void BottomBar::drawVolume()
 
     if (hovered || active) {
         ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-        ImGui::SetTooltip("%d%%", (int)(m_volume * 100.0f));
+        ImGui::SetTooltip("%d%%", (int)(sliderVolume * 100.0f));
     }
 
     const ImU32 trackColor = ImGui::ColorConvertFloat4ToU32(Colors::kTrackIdle);
     const ImU32 fillColor  = ImGui::ColorConvertFloat4ToU32((hovered || active) ? Colors::kTrackProgressHover : Colors::kTrackProgress);
-    const float fillX = screenPos.x + (kVolumeSliderW * (effectivelyMuted ? 0.0f : m_volume));
+    const float fillX = screenPos.x + (kVolumeSliderW * (effectivelyMuted ? 0.0f : sliderVolume));
 
     auto* dl = ImGui::GetWindowDrawList();
     dl->AddRectFilled(screenPos, { screenPos.x + kVolumeSliderW, screenPos.y + kVolumeSliderH }, trackColor);
