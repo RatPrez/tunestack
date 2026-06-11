@@ -8,6 +8,7 @@
 #include <frames/attachedpictureframe.h>
 
 #include <cmath>
+#include <filesystem>
 #include <format>
 
 Player* Player::m_instance = nullptr;
@@ -187,6 +188,11 @@ bool Player::hasPath(const std::string& filePath) const
 bool Player::isShuffle() const { return m_shuffle; }
 bool Player::isRepeat() const { return m_repeat; }
 bool Player::isMuted() const { return m_muted; }
+
+std::string Player::getTrackId() const
+{
+    return std::filesystem::path(getCurrentFilePath()).stem().string();
+}
 
 const std::string& Player::getArtist() const { return m_artist; }
 const std::string& Player::getTrack() const { return m_track; }

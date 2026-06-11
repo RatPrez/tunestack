@@ -7,6 +7,7 @@
 
 #include "core/AppStatus.hpp"
 #include "core/EventBus.hpp"
+#include "core/PlaylistManager.hpp"
 #include "core/Player.hpp"
 #include "core/MediaManager.hpp"
 #include "core/Radio.hpp"
@@ -32,9 +33,10 @@ public:
     void draw();
 
 private:
-    AppStatus    m_appStatus;
-    EventBus     m_eventBus;
-    Settings     m_settings;
+    AppStatus       m_appStatus;
+    EventBus        m_eventBus;
+    Settings        m_settings;
+    PlaylistManager m_playlists;
     Player       m_player;
     MediaManager m_mediaManager;
     LastFM       m_lastfm;

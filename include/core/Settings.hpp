@@ -27,6 +27,8 @@ public:
         save();
     }
 
+    std::filesystem::path configDir() const;
+
     static Settings* Instance() { return m_instance; }
 
 private:

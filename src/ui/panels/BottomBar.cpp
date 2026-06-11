@@ -6,6 +6,7 @@
 #include <IconsFontAwesome5.h>
 
 #include "core/Player.hpp"
+#include "core/PlaylistManager.hpp"
 #include "core/TextureCache.hpp"
 
 #include "ui/Colors.hpp"
@@ -87,6 +88,31 @@ void BottomBar::drawTrackInfo()
     ImGui::PopStyleColor();
 
     ImGui::EndGroup();
+
+    // like button — only shown when a tunestack track is loaded
+    const std::string trackId = player->getTrackId();
+    if (!trackId.empty()) {
+        auto* pm = PlaylistManager::Instance();
+        const bool liked = pm->hasTrack(PlaylistManager::kLikedSongs, trackId);
+
+        ImGui::SameLine(0.f, 12.f);
+        ImGui::SetCursorPosY((Layout::kSideBarWidth - kButtonSize) / 2.0f);
+
+        const char* icon = liked ? ICON_FA_CHECK : ICON_FA_PLUS;
+        const char* hint = liked ? "Remove from Liked Songs" : "Add to Liked Songs";
+
+        ImGui::PushStyleColor(ImGuiCol_Text, liked ? Colors::kTermainlGreen : Colors::kWhiteHalf);
+        if (drawButton("like", icon, hint)) {
+            if (liked) {
+                pm->removeTrack(PlaylistManager::kLikedSongs, trackId);
+            } else {
+                const std::string& t = player->getTrack();
+                const std::string& a = player->getArtist();
+                pm->addTrack(PlaylistManager::kLikedSongs, { trackId, a, {}, t });
+            }
+        }
+        ImGui::PopStyleColor();
+    }
 }
 
 void BottomBar::drawTrackProgress()

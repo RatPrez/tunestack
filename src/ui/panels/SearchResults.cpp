@@ -5,6 +5,7 @@
 #include <IconsFontAwesome5.h>
 
 #include "core/MediaManager.hpp"
+#include "core/PlaylistManager.hpp"
 #include "core/Player.hpp"
 #include "ui/Colors.hpp"
 
@@ -69,13 +70,38 @@ void SearchResults::drawRow(int index, const TrackResult& result)
         );
         ImGui::PopStyleColor(2);
 
-        rowHovered = ImGui::IsItemHovered();
+        const ImVec2 rowMin = { ImGui::GetWindowPos().x, ImGui::GetWindowPos().y + rowTop };
+        rowHovered = ImGui::IsMouseHoveringRect(rowMin, { rowMin.x + ImGui::GetWindowWidth(), rowMin.y + kRowHeight });
         if (rowHovered) { ImGui::SetMouseCursor(ImGuiMouseCursor_Hand); }
 
         // title — vertically centered
         ImGui::SameLine();
         ImGui::SetCursorPosY(rowTop + (kRowHeight - ImGui::GetTextLineHeight()) / 2.0f);
         ImGui::TextUnformatted(result.track.c_str());
+
+        // like button — visible on hover
+        if (rowHovered) {
+            auto* pm = PlaylistManager::Instance();
+            const bool liked = pm->hasTrack(PlaylistManager::kLikedSongs, result.id);
+            ImGui::SameLine();
+            ImGui::SetCursorPosY(rowTop + (kRowHeight - ImGui::GetTextLineHeight()) / 2.0f);
+            ImGui::PushStyleColor(ImGuiCol_Text, liked ? Colors::kTermainlGreen : Colors::kWhiteHalf);
+            ImGui::PushStyleColor(ImGuiCol_Button,        Colors::kTransparent);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Colors::kTransparent);
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive,  Colors::kTransparent);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+            const char* likeIcon = liked ? ICON_FA_CHECK : ICON_FA_PLUS;
+            if (ImGui::SmallButton(likeIcon)) {
+                if (liked) pm->removeTrack(PlaylistManager::kLikedSongs, result.id);
+                else       pm->addTrack(PlaylistManager::kLikedSongs, result);
+            }
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip(liked ? "Remove from Liked Songs" : "Add to Liked Songs");
+                ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            }
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor(4);
+        }
 
         if (MediaManager::Instance()->isDownloaded(result.id))
         {

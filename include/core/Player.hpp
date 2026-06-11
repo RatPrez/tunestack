@@ -37,6 +37,7 @@ public:
     bool isRepeat() const;
     bool isMuted() const;
 
+    std::string getTrackId() const;
     const std::string& getArtist() const;
     const std::string& getTrack() const;
     const std::string& getArtworkKey() const;

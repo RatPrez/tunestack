@@ -10,6 +10,11 @@ Settings::Settings()
     load();
 }
 
+std::filesystem::path Settings::configDir() const
+{
+    return configPath().parent_path();
+}
+
 std::filesystem::path Settings::configPath() const
 {
 #ifdef _WIN32

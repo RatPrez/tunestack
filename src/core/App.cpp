@@ -7,6 +7,7 @@
 
 App::App(SDL_Renderer* renderer)
     : m_lastfm(m_settings.get<std::string>("lastfm_api_key"))
+    , m_playlists(m_settings.configDir())
     , m_radio(m_player, m_mediaManager, m_lastfm)
 {
     EventBus::m_instance = &m_eventBus;
