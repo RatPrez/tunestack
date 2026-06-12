@@ -107,7 +107,7 @@ Some of the file scaffolding and boilerplate in this project (initial class skel
 
 ## Licence
 
-Do whatever you want with this code. No attribution required, though it's always appreciated.
+[MIT](LICENSE) — do whatever you want with this code.
 
 ---
 
