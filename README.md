@@ -109,6 +109,8 @@ Some of the file scaffolding and boilerplate in this project (initial class skel
 
 [MIT](LICENSE) — do whatever you want with this code.
 
+Third-party library notices are in [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+
 ---
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/ratprez)
