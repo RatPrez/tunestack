@@ -55,7 +55,7 @@ void TopBar::drawLeft(const ImVec2& windowPos, const ImVec2& windowSize)
     ImGui::Begin("tbl", nullptr, Flags::kStaticDiv);
 
 
-    drawButton(0, Anchor::TopLeft, ICON_FA_HOME, "Home");
+    // drawButton(0, Anchor::TopLeft, ICON_FA_HOME, "Home");
 
 
     ImGui::End();
