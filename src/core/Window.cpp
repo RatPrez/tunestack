@@ -11,6 +11,8 @@
 #include "core/App.hpp"
 #include "ui/Fonts.hpp"
 
+#include <stb_image.h>
+
 static constexpr int kFpsTarget = 60;
 static constexpr float kFpsMs = 1000.f / kFpsTarget;
 
@@ -86,6 +88,18 @@ bool Window::initSDL()
             return false;
         }
         SDL_SetWindowMinimumSize(m_window, 800, 500);
+
+        // window icon
+        int w, h, channels;
+        unsigned char* pixels = stbi_load("assets/icons/tunestack.png", &w, &h, &channels, 4);
+        if (pixels) {
+            SDL_Surface* icon = SDL_CreateSurfaceFrom(w, h, SDL_PIXELFORMAT_RGBA32, pixels, w * 4);
+            if (icon) {
+                SDL_SetWindowIcon(m_window, icon);
+                SDL_DestroySurface(icon);
+            }
+            stbi_image_free(pixels);
+        }
     } catch (std::exception e) {
 
         return false;

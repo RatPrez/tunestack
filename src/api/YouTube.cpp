@@ -5,6 +5,7 @@
 #include <json.hpp>
 
 #include "core/Settings.hpp"
+#include "core/YtDlp.hpp"
 
 using json = nlohmann::json;
 
@@ -48,18 +49,30 @@ std::optional<YouTubeResult> YouTube::search(const std::string& query)
     return std::nullopt;
 }
 
-bool YouTube::download(const YouTubeResult& target, const std::string& outputPath)
+DownloadResult YouTube::download(const YouTubeResult& target, const std::string& outputPath)
 {
+    const std::string ytdlp = YtDlp::Instance() ? YtDlp::Instance()->getPath() : std::string{};
+    if (ytdlp.empty()) { return DownloadResult::Error; }
+
     const std::string cmd = std::format(
-        "./bin/yt-dlp -x --audio-format mp3 -o \"{}\" \"https://youtube.com/watch?v={}\"",
-        outputPath, target.videoId
+        "\"{}\" -x --audio-format mp3 -o \"{}\" \"https://youtube.com/watch?v={}\" 2>&1",
+        ytdlp, outputPath, target.videoId
     );
 
     FILE* pipe = popen(cmd.c_str(), "r");
-    if (!pipe) { return false; }
+    if (!pipe) { return DownloadResult::Error; }
 
+    std::string output;
     char buf[256];
-    while (fgets(buf, sizeof(buf), pipe)) {}
+    while (fgets(buf, sizeof(buf), pipe)) { output += buf; }
+    const int rc = pclose(pipe);
 
-    return pclose(pipe) == 0;
+    if (rc == 0) { return DownloadResult::Ok; }
+
+    if (output.find("429") != std::string::npos ||
+        output.find("Too Many Requests") != std::string::npos) {
+        return DownloadResult::RateLimited;
+    }
+
+    return DownloadResult::Error;
 }

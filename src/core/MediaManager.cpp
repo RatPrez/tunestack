@@ -1,5 +1,6 @@
 #include "core/MediaManager.hpp"
 #include "core/AppStatus.hpp"
+#include "api/YouTube.hpp"
 
 MediaManager* MediaManager::m_instance = nullptr;
 
@@ -30,11 +31,11 @@ static std::string safeId(const std::string& id)
     return std::to_string(std::hash<std::string>{}(id));
 }
 
-MediaManager::MediaManager(const std::string& libraryPath)
-    : m_libraryPath(libraryPath)
+MediaManager::MediaManager(const std::filesystem::path& libraryPath)
+    : m_libraryPath((libraryPath / "downloads").string() + "/")
 {
     m_instance = this;
-    fs::create_directories(libraryPath);
+    fs::create_directories(m_libraryPath);
 }
 
 void MediaManager::requestTrack(const TrackResult& track, TrackCallback onComplete)
@@ -104,18 +105,23 @@ void MediaManager::fetchAndDownload(const TrackResult& track)
     }
 
     const std::string path = trackPath(track.id);
-    if (!m_youtube.download(*ytResult, path)) {
+    const auto dlResult = m_youtube.download(*ytResult, path);
+    if (dlResult == DownloadResult::RateLimited) {
+        if (AppStatus::Instance()) { AppStatus::Instance()->set("YouTube rate limited — try again later"); }
+        pushCompletions(track.id, TrackStatus::RateLimited, "");
+        return;
+    }
+    if (dlResult != DownloadResult::Ok) {
         pushCompletions(track.id, TrackStatus::Error, "");
         return;
     }
 
-    // fetch artwork via iTunes
+    // fetch artwork from LastFM URL stored in the track (populated by enrichment)
     std::string artworkBytes;
-    const std::string artUrl = m_itunes.fetchArtwork(track.artist, track.track);
-    if (!artUrl.empty()) {
-        const size_t schemeEnd = artUrl.find("://");
+    if (!track.albumArtUrl.empty()) {
+        const size_t schemeEnd = track.albumArtUrl.find("://");
         if (schemeEnd != std::string::npos) {
-            const std::string hostAndPath = artUrl.substr(schemeEnd + 3);
+            const std::string hostAndPath = track.albumArtUrl.substr(schemeEnd + 3);
             const size_t pathStart = hostAndPath.find('/');
             if (pathStart != std::string::npos) {
                 httplib::Client client("https://" + hostAndPath.substr(0, pathStart));
@@ -172,5 +178,23 @@ void MediaManager::pushCompletions(const std::string& id, const TrackStatus stat
     std::lock_guard lock(m_queueMutex);
     for (auto& cb : callbacks) {
         m_completionQueue.push({ std::move(cb), status, filePath });
+    }
+}
+
+std::uintmax_t MediaManager::cacheSize() const
+{
+    std::uintmax_t total = 0;
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator(m_libraryPath, ec)) {
+        if (entry.is_regular_file(ec)) { total += entry.file_size(ec); }
+    }
+    return total;
+}
+
+void MediaManager::clearCache()
+{
+    std::error_code ec;
+    for (const auto& entry : fs::directory_iterator(m_libraryPath, ec)) {
+        if (entry.is_regular_file(ec)) { fs::remove(entry.path(), ec); }
     }
 }

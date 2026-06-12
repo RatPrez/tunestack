@@ -11,6 +11,6 @@ public:
     void draw();
 
 private:
-    bool itemButton(const int& index, const std::string& label);
+    bool iconButton(int index, const char* icon, const char* tooltip);
 
 };

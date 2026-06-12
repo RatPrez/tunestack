@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <mutex>
 #include <queue>
@@ -8,22 +9,23 @@
 #include <vector>
 
 #include "core/Track.hpp"
-#include "api/ITunes.hpp"
 #include "api/YouTube.hpp"
 
-enum class TrackStatus { Ready, Downloading, NotFound, Error };
+enum class TrackStatus { Ready, Downloading, NotFound, RateLimited, Error };
 
 using TrackCallback = std::function<void(TrackStatus, const std::string&)>;
 
 class MediaManager
 {
 public:
-    explicit MediaManager(const std::string& libraryPath = "./downloads/");
+    explicit MediaManager(const std::filesystem::path& libraryPath);
 
     void requestTrack(const TrackResult& track, TrackCallback onComplete);
     void processCompletions();
     bool isDownloaded(const std::string& id) const;
     std::string getPath(const std::string& id) const;
+    std::uintmax_t cacheSize() const;
+    void clearCache();
 
     static MediaManager* Instance() { return m_instance; }
 
@@ -44,7 +46,6 @@ private:
     void pushCompletions(const std::string& id, TrackStatus status, const std::string& filePath);
 
     std::string m_libraryPath;
-    ITunes m_itunes;
     YouTube m_youtube;
     std::mutex m_downloadMutex;
     std::unordered_map<std::string, std::vector<TrackCallback>> m_pendingCallbacks;

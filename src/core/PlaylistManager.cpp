@@ -49,10 +49,12 @@ void PlaylistManager::load()
         auto& tracks = m_playlists[n];
         for (const auto& t : data) {
             tracks.push_back({
-                t.value("id",     std::string{}),
-                t.value("artist", std::string{}),
-                t.value("album",  std::string{}),
-                t.value("track",  std::string{}),
+                t.value("id",          std::string{}),
+                t.value("artist",      std::string{}),
+                t.value("album",       std::string{}),
+                t.value("track",       std::string{}),
+                t.value("albumArtUrl", std::string{}),
+                t.value("duration",    0),
             });
         }
     }
@@ -74,7 +76,14 @@ void PlaylistManager::save(const std::string& name) const
 
     json data = json::array();
     for (const auto& t : it->second) {
-        data.push_back({ {"id", t.id}, {"artist", t.artist}, {"album", t.album}, {"track", t.track} });
+        data.push_back({
+            {"id",          t.id},
+            {"artist",      t.artist},
+            {"album",       t.album},
+            {"track",       t.track},
+            {"albumArtUrl", t.albumArtUrl},
+            {"duration",    t.duration},
+        });
     }
 
     std::ofstream f(playlistPath(name));

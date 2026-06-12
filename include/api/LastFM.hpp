@@ -70,31 +70,6 @@ struct LastFMScrobble
     std::time_t timestamp = 0;
 };
 
-struct LastFMRecentTrack
-{
-    std::string track;
-    std::string artist;
-    std::string album;
-    std::string url;
-    std::vector<LastFMImage> images;
-    bool nowPlaying = false;
-    std::time_t playedAt = 0;
-};
-
-struct LastFMUser
-{
-    std::string name;
-    std::string realName;
-    std::string url;
-    std::string country;
-    int age = 0;
-    int playCount = 0;
-    int trackCount = 0;
-    int artistCount = 0;
-    int albumCount = 0;
-    std::string registered;
-    std::vector<LastFMImage> images;
-};
 
 class LastFM
 {
@@ -131,15 +106,6 @@ public:
     std::optional<LastFMAlbum>              albumInfo(const std::string& artist, const std::string& album, const std::string& username = {}) const;
     std::vector<LastFMTag>                  albumTopTags(const std::string& artist, const std::string& album) const;
 
-    // user
-    std::optional<LastFMUser>               userInfo(const std::string& username) const;
-    std::vector<LastFMRecentTrack>          userRecentTracks(const std::string& username, int limit = 50) const;
-    std::vector<LastFMTrack>                userTopTracks(const std::string& username, const std::string& period = "overall", int limit = 25) const;
-    std::vector<LastFMArtist>               userTopArtists(const std::string& username, const std::string& period = "overall", int limit = 25) const;
-    std::vector<LastFMAlbum>                userTopAlbums(const std::string& username, const std::string& period = "overall", int limit = 25) const;
-    std::vector<LastFMTrack>                userLovedTracks(const std::string& username, int limit = 50) const;
-    std::vector<LastFMArtist>               userFriends(const std::string& username, int limit = 50) const;
-
     // charts
     std::vector<LastFMTrack>                chartTopTracks(int limit = 25) const;
     std::vector<LastFMArtist>               chartTopArtists(int limit = 25) const;
@@ -161,7 +127,6 @@ private:
     static LastFMTrack               parseTrack(const std::string& json);
     static LastFMArtist              parseArtist(const std::string& json);
     static LastFMAlbum               parseAlbum(const std::string& json);
-    static LastFMRecentTrack         parseRecentTrack(const std::string& json);
     static std::string               extractField(const std::string& json, const std::string& key);
     static int                       extractInt(const std::string& json, const std::string& key);
     static std::vector<std::string>  extractArray(const std::string& json, const std::string& key);

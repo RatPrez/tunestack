@@ -80,6 +80,10 @@ static LastFMTrack trackFromJson(const json& j)
         t.album = a.is_string() ? a.get<std::string>() : jsonStr(a, "title");
     }
     t.images = imagesFromJson(j);
+    // track.getInfo nests album art under "album" — fall back to it when track has no images
+    if (t.images.empty() && j.contains("album") && j["album"].is_object()) {
+        t.images = imagesFromJson(j["album"]);
+    }
     if (j.contains("toptags") && j["toptags"].is_object())
         t.tags = tagsFromJson(j["toptags"]);
     return t;
@@ -123,21 +127,6 @@ static LastFMAlbum albumFromJson(const json& j)
     if (j.contains("tags") && j["tags"].is_object())
         a.tags = tagsFromJson(j["tags"]);
     return a;
-}
-
-static LastFMRecentTrack recentFromJson(const json& j)
-{
-    LastFMRecentTrack r;
-    r.track = jsonStr(j, "name");
-    r.url   = jsonStr(j, "url");
-    if (j.contains("artist")) r.artist = jsonStr(j["artist"], "#text");
-    if (j.contains("album"))  r.album  = jsonStr(j["album"],  "#text");
-    r.images    = imagesFromJson(j);
-    r.nowPlaying = j.contains("@attr") && j["@attr"].contains("nowplaying");
-    if (j.contains("date") && j["date"].is_object()) {
-        try { r.playedAt = (std::time_t)std::stoll(jsonStr(j["date"], "uts")); } catch (...) {}
-    }
-    return r;
 }
 
 // ---------------------------------------------------------------------------
@@ -427,115 +416,6 @@ std::vector<LastFMTag> LastFM::albumTopTags(const std::string& artist, const std
         if (j.contains("toptags")) { return tagsFromJson(j["toptags"]); }
     } catch (...) {}
     return {};
-}
-
-// ---------------------------------------------------------------------------
-// user
-
-std::optional<LastFMUser> LastFM::userInfo(const std::string& username) const
-{
-    const auto resp = get("method=user.getInfo&user=" + urlEncode(username));
-    if (resp.empty()) { return std::nullopt; }
-    try {
-        auto j = json::parse(resp);
-        if (!j.contains("user")) { return std::nullopt; }
-        const auto& u = j["user"];
-        LastFMUser user;
-        user.name       = jsonStr(u, "name");
-        user.realName   = jsonStr(u, "realname");
-        user.url        = jsonStr(u, "url");
-        user.country    = jsonStr(u, "country");
-        user.age        = jsonInt(u, "age");
-        user.playCount  = jsonInt(u, "playcount");
-        user.trackCount = jsonInt(u, "track_count");
-        user.artistCount= jsonInt(u, "artist_count");
-        user.albumCount = jsonInt(u, "album_count");
-        user.images     = imagesFromJson(u);
-        if (u.contains("registered")) user.registered = jsonStr(u["registered"], "#text");
-        return user;
-    } catch (...) {}
-    return std::nullopt;
-}
-
-std::vector<LastFMRecentTrack> LastFM::userRecentTracks(const std::string& username, int limit) const
-{
-    const auto resp = get("method=user.getRecentTracks&user=" + urlEncode(username) + "&limit=" + std::to_string(limit));
-    std::vector<LastFMRecentTrack> result;
-    if (resp.empty()) { return result; }
-    try {
-        auto j = json::parse(resp);
-        const auto& arr = j["recenttracks"]["track"];
-        if (arr.is_array()) { for (const auto& t : arr) result.push_back(recentFromJson(t)); }
-    } catch (...) {}
-    return result;
-}
-
-std::vector<LastFMTrack> LastFM::userTopTracks(const std::string& username, const std::string& period, int limit) const
-{
-    const auto resp = get("method=user.getTopTracks&user=" + urlEncode(username)
-        + "&period=" + urlEncode(period) + "&limit=" + std::to_string(limit));
-    std::vector<LastFMTrack> result;
-    if (resp.empty()) { return result; }
-    try {
-        auto j = json::parse(resp);
-        const auto& arr = j["toptracks"]["track"];
-        if (arr.is_array()) { for (const auto& t : arr) result.push_back(trackFromJson(t)); }
-    } catch (...) {}
-    return result;
-}
-
-std::vector<LastFMArtist> LastFM::userTopArtists(const std::string& username, const std::string& period, int limit) const
-{
-    const auto resp = get("method=user.getTopArtists&user=" + urlEncode(username)
-        + "&period=" + urlEncode(period) + "&limit=" + std::to_string(limit));
-    std::vector<LastFMArtist> result;
-    if (resp.empty()) { return result; }
-    try {
-        auto j = json::parse(resp);
-        const auto& arr = j["topartists"]["artist"];
-        if (arr.is_array()) { for (const auto& a : arr) result.push_back(artistFromJson(a)); }
-    } catch (...) {}
-    return result;
-}
-
-std::vector<LastFMAlbum> LastFM::userTopAlbums(const std::string& username, const std::string& period, int limit) const
-{
-    const auto resp = get("method=user.getTopAlbums&user=" + urlEncode(username)
-        + "&period=" + urlEncode(period) + "&limit=" + std::to_string(limit));
-    std::vector<LastFMAlbum> result;
-    if (resp.empty()) { return result; }
-    try {
-        auto j = json::parse(resp);
-        const auto& arr = j["topalbums"]["album"];
-        if (arr.is_array()) { for (const auto& a : arr) result.push_back(albumFromJson(a)); }
-    } catch (...) {}
-    return result;
-}
-
-std::vector<LastFMTrack> LastFM::userLovedTracks(const std::string& username, int limit) const
-{
-    const auto resp = get("method=user.getLovedTracks&user=" + urlEncode(username) + "&limit=" + std::to_string(limit));
-    std::vector<LastFMTrack> result;
-    if (resp.empty()) { return result; }
-    try {
-        auto j = json::parse(resp);
-        const auto& arr = j["lovedtracks"]["track"];
-        if (arr.is_array()) { for (const auto& t : arr) result.push_back(trackFromJson(t)); }
-    } catch (...) {}
-    return result;
-}
-
-std::vector<LastFMArtist> LastFM::userFriends(const std::string& username, int limit) const
-{
-    const auto resp = get("method=user.getFriends&user=" + urlEncode(username) + "&limit=" + std::to_string(limit));
-    std::vector<LastFMArtist> result;
-    if (resp.empty()) { return result; }
-    try {
-        auto j = json::parse(resp);
-        const auto& arr = j["friends"]["user"];
-        if (arr.is_array()) { for (const auto& a : arr) result.push_back(artistFromJson(a)); }
-    } catch (...) {}
-    return result;
 }
 
 // ---------------------------------------------------------------------------

@@ -8,6 +8,7 @@
 
 #include "core/AppStatus.hpp"
 #include "core/MediaManager.hpp"
+#include "core/PlayQueue.hpp"
 #include "core/Player.hpp"
 #include "core/Track.hpp"
 
@@ -19,6 +20,7 @@ Radio::Radio(Player& player, MediaManager& mediaManager, LastFM& lastfm)
 void Radio::tick()
 {
     if (!m_player.isPlaying() || m_player.hasNext()) { return; }
+    if (PlayQueue::Instance() && !PlayQueue::Instance()->isEmpty()) { return; }
 
     const std::string currentTrack  = m_player.getTrack();
     const std::string currentArtist = m_player.getArtist();
