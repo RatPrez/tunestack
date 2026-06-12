@@ -13,13 +13,13 @@ YouTube::YouTube()
     : m_httpClient("https://www.googleapis.com")
 {}
 
-std::optional<YouTubeResult> YouTube::search(const std::string& query)
+SearchResult YouTube::search(const std::string& query)
 {
     try {
         const std::string apiKey = Settings::Instance()->get<std::string>("youtube_api_key", "");
-        if (apiKey == "") {
-            std::cout << "Youtube: must have a API key set." << std::endl;
-            return std::nullopt;
+        if (apiKey.empty()) {
+            std::cout << "Youtube: must have a API key set.\n";
+            return {};
         }
 
         const std::string path = "/youtube/v3/search"
@@ -28,25 +28,27 @@ std::optional<YouTubeResult> YouTube::search(const std::string& query)
             + "&key=" + apiKey;
 
         auto res = m_httpClient.Get(path);
-        if (!res || res->status != 200) {
-            std::cout << "YouTube: HTTP " << (res ? res->status : -1) << "\n";
-            return std::nullopt;
+        if (!res) { return {}; }
+        if (res->status == 429) { return { std::nullopt, true }; }
+        if (res->status != 200) {
+            std::cout << "YouTube: HTTP " << res->status << "\n";
+            return {};
         }
 
         auto body = json::parse(res->body, nullptr, false);
         if (body.is_discarded()) {
             std::cout << "YouTube: failed to parse response\n";
-            return std::nullopt;
+            return {};
         }
 
-        return YouTubeResult{
+        return { YouTubeResult{
             .title   = body["items"][0]["snippet"]["title"].get<std::string>(),
             .videoId = body["items"][0]["id"]["videoId"].get<std::string>(),
-        };
+        }};
     } catch (const std::exception& e) {
         std::cout << "YouTube: " << e.what() << "\n";
     }
-    return std::nullopt;
+    return {};
 }
 
 DownloadResult YouTube::download(const YouTubeResult& target, const std::string& outputPath)

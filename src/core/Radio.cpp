@@ -1,6 +1,7 @@
 #include "core/Radio.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <functional>
 #include <random>
 #include <string>
@@ -55,9 +56,38 @@ void Radio::tick()
                 id = std::to_string(std::hash<std::string>{}(pick.artist + '\t' + pick.name));
             }
 
-            TrackResult result { std::move(id), std::move(pick.artist), std::move(pick.album), std::move(pick.name) };
-            m_mediaManager.requestTrack(result, [](TrackStatus status, const std::string& path) {
-                if (status == TrackStatus::Ready) { Player::Instance()->queue(path); }
+            TrackResult result { id, pick.artist, pick.album, pick.name, {}, 0 };
+
+            // fetch art URL via track.getInfo — we're already on a background thread
+            if (auto info = m_lastfm.trackInfo(pick.artist, pick.name)) {
+                if (!info->album.empty()) { result.album = info->album; }
+                for (auto& img : info->images) {
+                    if (img.size == "extralarge" && !img.url.empty()) { result.albumArtUrl = img.url; break; }
+                }
+                if (result.albumArtUrl.empty()) {
+                    for (auto& img : info->images) {
+                        if (img.size == "large" && !img.url.empty()) { result.albumArtUrl = img.url; break; }
+                    }
+                }
+            }
+
+            m_mediaManager.requestTrack(result, [this, result](TrackStatus status, const std::string& path) {
+                if (status == TrackStatus::Ready) {
+                    Player::Instance()->queue(path);
+                } else if (status == TrackStatus::RateLimited) {
+                    AppStatus::Instance()->set("YouTube rate limited — retrying in 60s...");
+                    std::thread([this, result]() {
+                        std::this_thread::sleep_for(std::chrono::seconds(60));
+                        AppStatus::Instance()->clear();
+                        // only retry if the user hasn't queued something else in the meantime
+                        if (Player::Instance()->hasNext() || !PlayQueue::Instance()->isEmpty()) { return; }
+                        m_mediaManager.requestTrack(result, [](TrackStatus s, const std::string& p) {
+                            if (s == TrackStatus::Ready && !Player::Instance()->hasNext()) {
+                                Player::Instance()->queue(p);
+                            }
+                        });
+                    }).detach();
+                }
             });
         }
 

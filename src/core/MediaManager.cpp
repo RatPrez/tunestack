@@ -98,11 +98,17 @@ void MediaManager::fetchAndDownload(const TrackResult& track)
         AppStatus::Instance()->set("Caching Song");
     }
 
-    auto ytResult = m_youtube.search(std::format("{} - {} (Audio)", track.track, track.artist));
-    if (!ytResult) {
+    auto ytSearch = m_youtube.search(std::format("{} - {} (Audio)", track.track, track.artist));
+    if (ytSearch.rateLimited) {
+        if (AppStatus::Instance()) { AppStatus::Instance()->set("YouTube rate limited — retrying in 60s"); }
+        pushCompletions(track.id, TrackStatus::RateLimited, "");
+        return;
+    }
+    if (!ytSearch.result) {
         pushCompletions(track.id, TrackStatus::NotFound, "");
         return;
     }
+    const auto& ytResult = ytSearch.result;
 
     const std::string path = trackPath(track.id);
     const auto dlResult = m_youtube.download(*ytResult, path);

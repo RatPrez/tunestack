@@ -14,11 +14,17 @@ struct YouTubeResult
 
 enum class DownloadResult { Ok, RateLimited, NotFound, Error };
 
+struct SearchResult
+{
+    std::optional<YouTubeResult> result;
+    bool rateLimited = false;
+};
+
 class YouTube
 {
 public:
     YouTube();
-    std::optional<YouTubeResult> search(const std::string& query);
+    SearchResult search(const std::string& query);
     DownloadResult download(const YouTubeResult& target, const std::string& outputPath);
 
 private:
